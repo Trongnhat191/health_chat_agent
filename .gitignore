@@ -1,2 +1,8 @@
 .env
 .venv
+/*.pt
+/*.jpg
+runs
+test_images
+test_yolo.py
+__pycache__
