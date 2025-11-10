@@ -6,3 +6,4 @@ runs
 test_images
 test_yolo.py
 __pycache__
+test_api.py
