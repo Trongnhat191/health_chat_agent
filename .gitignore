@@ -8,3 +8,5 @@ test_yolo.py
 __pycache__
 test_api.py
 recipe_txt_data/*txt
+weaviate_data/*
+*.ipynb

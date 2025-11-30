@@ -62,7 +62,7 @@ if __name__ == '__main__':
                 # print(ingredients)
                 instructions = get_instructions_html(link)
                 # print(instructions)
-                results_text = 'Ingredients of ' + name + ':\n' + ingredients + '\nInstructions of ' + name + ':\n' + instructions + '-----------------\n'
+                results_text = 'Ingredients of ' + name + ':\n' + ingredients + '++++++++++++\nInstructions of ' + name + ':\n' + instructions
                 save_to_file(name, results_text)
             except Exception as e:
                 print(f"Error processing {name}: {e}")
