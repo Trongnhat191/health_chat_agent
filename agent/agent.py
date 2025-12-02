@@ -22,7 +22,7 @@ def multiply(a: float, b: float) -> float:
     return a * b
 
 @tool
-def search_recipes(query: str, top_k: int = 3) -> str:
+def search_recipes(query: str, top_k: int = 1) -> str:
     """
     Tìm kiếm công thức nấu ăn trong cơ sở dữ liệu.
     
@@ -52,7 +52,10 @@ def search_recipes(query: str, top_k: int = 3) -> str:
 
 
 
-model = ChatGroq(model="openai/gpt-oss-120b", api_key=os.getenv("GROQ_API"))
+model = ChatGroq(model="openai/gpt-oss-120b", 
+                 api_key=os.getenv("GROQ_API"),
+                   temperature=0,
+                     streaming=True)
 agent = create_agent(
     model,
     tools=[multiply, search_recipes],
