@@ -3,10 +3,12 @@
 /*.pt
 /*.jpg
 runs
+__pycache__
+__init__.py
 test_images
 test_yolo.py
-__pycache__
-test_api.py
+test_api_nutrition.py
+test_toolcalling.py
 recipe_txt_data/*txt
 weaviate_data/*
 *.ipynb

@@ -6,9 +6,6 @@ load_dotenv()
 
 GROQ_API = os.getenv("GROQ_API")
 
-
-
-
 def multiply(a: float, b: float) -> float:
     """Multiply two numbers and returns the product"""
     return a * b
@@ -17,9 +14,6 @@ def multiply(a: float, b: float) -> float:
 def add(a: float, b: float) -> float:
     """Add two numbers and returns the sum"""
     return a + b
-
-
-
 
 llm = Groq(model="openai/gpt-oss-20b", api_key=GROQ_API)
 
