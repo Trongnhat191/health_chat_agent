@@ -1,5 +1,7 @@
 import sys
-sys.path.append("/home/nhat/Documents/HUST/project 1")
+import os
+# sys.path.append("/home/nhat/Documents/HUST/project 1")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from dataclasses import dataclass
 from langchain_groq import ChatGroq
@@ -7,10 +9,34 @@ from langchain.agents import create_agent
 from langchain.tools import tool, ToolRuntime
 from dotenv import load_dotenv
 
-from embed.query import query_recipe
-
 load_dotenv()
 import os
+
+def connect_weaviate():
+    from FlagEmbedding import BGEM3FlagModel
+    import weaviate
+
+    model = BGEM3FlagModel('BAAI/bge-m3',  
+                            use_fp16=True)
+    client = weaviate.connect_to_custom(
+        http_host = "weaviate",
+        http_port= 8080,
+        http_secure= False,
+        grpc_host= "weaviate",
+        grpc_port = 50051,
+        grpc_secure= False
+    )
+
+    recipes = client.collections.get("Recipes")
+    return model, recipes
+
+def query_recipe(query: str, top_k: int = 3):
+    model, recipes = connect_weaviate()
+    query_vec = model.encode(query)["dense_vecs"]
+    results = recipes.query.near_vector(near_vector=query_vec.tolist(), 
+                                        limit=top_k,
+                                        return_metadata=["distance", "certainty"])
+    return results
 
 @dataclass
 class UserContext:
@@ -41,12 +67,12 @@ def search_recipes(query: str, top_k: int = 1) -> str:
     output = []
     for i, r in enumerate(results.objects, 1):
         output.append(f"""
-**Kết quả {i}:**
-- Tiêu đề: {r.properties.get('title', 'N/A')}
-- Phần: {r.properties.get('section', 'N/A')}
-- Nội dung: {r.properties.get('content', 'N/A')}
-- Độ tương đồng: {r.metadata.certainty:.2%}
-""")
+                        **Kết quả {i}:**
+                        - Tiêu đề: {r.properties.get('title', 'N/A')}
+                        - Phần: {r.properties.get('section', 'N/A')}
+                        - Nội dung: {r.properties.get('content', 'N/A')}
+                        - Độ tương đồng: {r.metadata.certainty:.2%}
+                        """)
     
     return "\n".join(output)
 

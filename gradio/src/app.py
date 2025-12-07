@@ -1,6 +1,9 @@
 import gradio as gr
 import sys
-sys.path.append("/home/nhat/Documents/HUST/project 1")
+import os
+# sys.path.append("/home/nhat/Documents/HUST/project 1")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 from agent.agent import agent, UserContext
 
 def ask_agent(question, history):
