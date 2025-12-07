@@ -3,7 +3,7 @@ from glob import glob
 from FlagEmbedding import BGEM3FlagModel
 
 def get_file_path_list():
-    file_list = glob('recipe_txt_data/*.txt')
+    file_list = glob('data/recipe_txt_data/*.txt')
     return file_list
 
 def read_content_from_file(file_path: str):

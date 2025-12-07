@@ -9,6 +9,7 @@ test_images
 test_yolo.py
 test_api_nutrition.py
 test_toolcalling.py
-recipe_txt_data/*txt
+data/recipe_txt_data/*
+data/weaviate_data/*
 weaviate_data/*
 *.ipynb

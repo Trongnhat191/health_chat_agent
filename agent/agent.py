@@ -6,11 +6,15 @@ from langchain_groq import ChatGroq
 from langchain.agents import create_agent
 from langchain.tools import tool, ToolRuntime
 from dotenv import load_dotenv
+import requests
 
 from embed.query import query_recipe
 
 load_dotenv()
 import os
+
+API_KEY = os.getenv("USDA_KEY")
+BASE_URL = "https://api.nal.usda.gov/fdc/v1"
 
 @dataclass
 class UserContext:
@@ -50,7 +54,63 @@ def search_recipes(query: str, top_k: int = 1) -> str:
     
     return "\n".join(output)
 
+@tool
+def search_nutrition(food: str) -> str:
+    """
+    Tìm kiếm thông tin dinh dưỡng của một loại thực phẩm bằng tiếng anh
+    
+    Args:
+        food: Tên loại thực phẩm cần tìm kiếm
+    
+    Returns:
+        Thông tin dinh dưỡng của thực phẩm, chỉ cần 1 kết quả đầu tiên
+    """
+    if not API_KEY:
+        return "Lỗi: US A API key không được cấu hình (USDA_KEY)."
 
+    # Tìm fdcId của thực phẩm
+    url = f"{BASE_URL}/foods/search"
+    params = {
+        "query": food,
+        "pageSize": 1,
+        "api_key": API_KEY
+    }
+    r = requests.get(url, params=params)
+    r.raise_for_status()
+    data = r.json()
+    print(data)
+
+    if "foods" not in data or not data["foods"]:
+        return "Không tìm thấy thực phẩm nào."
+
+    first_food = data["foods"][0]
+    fdc_id = first_food["fdcId"]
+
+    url = f"{BASE_URL}/food/{fdc_id}"
+    params = {"api_key": API_KEY}
+    r = requests.get(url, params=params)
+    r.raise_for_status()
+    data = r.json()
+
+    # Build output string (trả về thay vì print)
+    out_lines = []
+    out_lines.append(f"Thông tin dinh dưỡng cho: {data.get('description','N/A')}\n")
+    out_lines.append("{:<35} {:>10} {:>10}".format("Chất dinh dưỡng", "Lượng", "Đơn vị"))
+    out_lines.append("-" * 60)
+
+    for nutrient in data.get("foodNutrients", []):
+        if nutrient.get("amount") <= 0:
+            continue
+        name = nutrient.get("nutrient", {}).get("name", "N/A")
+        amount = nutrient.get("amount", 0) or 0
+        unit = nutrient.get("nutrient", {}).get("unitName", "")
+        out_lines.append("{:<35} {:>10.2f} {:>10}".format(name, amount, unit))
+    print("\n".join(out_lines))
+    print('-----------------------------')
+    return "\n".join(out_lines)
+
+# @tool
+# def detect_recipe_from_image()
 
 model = ChatGroq(model="openai/gpt-oss-120b", 
                  api_key=os.getenv("GROQ_API"),
@@ -58,11 +118,9 @@ model = ChatGroq(model="openai/gpt-oss-120b",
                      streaming=True)
 agent = create_agent(
     model,
-    tools=[multiply, search_recipes],
+    tools=[multiply, search_recipes, search_nutrition],
     context_schema=UserContext,
-    system_prompt="Bạn là trợ lý ẩm thực thông minh. Bạn có thể tìm kiếm công thức nấu ăn và thực hiện các phép tính. Hãy trả lời bằng tiếng Việt."
-)
-
+    system_prompt="Bạn là trợ lý ẩm thực thông minh. Bạn có thể tìm kiếm công thức nấu ăn và thực hiện các phép tính. Hãy trả lời bằng tiếng Việt.")
 if __name__ == "__main__":
         result = agent.invoke(
         {"messages": [{"role": "user", "content": "Thành phần nguyên liệu của phở gà là gì?"}]},
