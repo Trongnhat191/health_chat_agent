@@ -5,9 +5,12 @@ import io
 import os
 
 app = FastAPI(title="YOLOv12 FastAPI GPU Service")
-
+import torch
+print("CUDA available:", torch.cuda.is_available())
+print("CUDA device count:", torch.cuda.device_count())
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Load model sẵn trên GPU
-model = YOLO("yolo12n.pt")
+model = YOLO("./model/yolo12n.pt").to(device)
 print("Model loaded on:", model.device)
 
 @app.get("/")

@@ -9,7 +9,46 @@ services:
       QUERY_DEFAULTS_LIMIT: 25
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
       PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
-      ENABLE_MODULES: 'text2vec-openai'
+      # ENABLE_MODULES: 'text2vec-openai'
       CLUSTER_HOSTNAME: 'node1'
     volumes:
       - ./weaviate_data:/var/lib/weaviate
+
+  yolo-service:
+    build: ./yolo_service
+    image: yolo-service:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+
+  agent-service:
+    build: ./agent
+    ports:
+      - "8001:8001"
+    environment:
+      - USDA_KEY=${USDA_KEY}
+      - NUTRITION_API_URL=${NUTRITION_API_URL}
+      - YOLO_API_URL=http://yolo-service:8000/predict
+      - GROQ_API=${GROQ_API}
+      - MODEL_NAME=${MODEL_NAME}
+      - WEAVIATE_URL=weaviate
+      - WEAVIATE_PORT=8080
+      - WEAVIATE_GRPC_PORT=50051
+    depends_on:
+      - weaviate
+      - yolo-service
+
+  gradioui: 
+    build: ./gradioui
+    ports:
+      - "7860:7860"
+    environment:
+      - AGENT_API_URL=http://agent-service:8001/chat
+    depends_on:
+      - agent-service

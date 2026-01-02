@@ -13,3 +13,5 @@ data/recipe_txt_data/*
 data/weaviate_data/*
 weaviate_data/*
 *.ipynb
+yolo_service/model/*
+agent/model/*

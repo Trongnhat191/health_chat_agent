@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+langchain
+langchain-groq
+weaviate-client
+python-dotenv
+requests
+FlagEmbedding
+python-multipart

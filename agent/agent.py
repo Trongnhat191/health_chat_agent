@@ -4,17 +4,43 @@ sys.path.append("/home/nhat/Documents/HUST/project 1")
 from dataclasses import dataclass
 from langchain_groq import ChatGroq
 from langchain.agents import create_agent
-from langchain.tools import tool, ToolRuntime
+from langchain.tools import tool
 from dotenv import load_dotenv
 import requests
-
-from embed.query import query_recipe
-
-load_dotenv()
+from FlagEmbedding import BGEM3FlagModel
+import weaviate
 import os
 
+load_dotenv()
+
 API_KEY = os.getenv("USDA_KEY")
-BASE_URL = "https://api.nal.usda.gov/fdc/v1"
+BASE_URL = os.getenv("NUTRITION_API_URL")
+YOLO_API_URL = os.getenv("YOLO_API_URL")
+GROQ_API_KEY = os.getenv("GROQ_API")
+MODEL_NAME = os.getenv("MODEL_NAME")
+WEAVIATE_URL = os.getenv("WEAVIATE_URL", "localhost")
+WEAVIATE_PORT = int(os.getenv("WEAVIATE_PORT", 8080))
+WEAVIATE_GRPC_PORT = int(os.getenv("WEAVIATE_GRPC_PORT", 50051))
+
+model = BGEM3FlagModel('BAAI/bge-m3',  
+                        use_fp16=True, cache_dir= "./model")
+# client = weaviate.connect_to_local()
+client = weaviate.connect_to_custom(
+    http_host=WEAVIATE_URL,
+    http_port=WEAVIATE_PORT,
+    http_secure=False,
+    grpc_host=WEAVIATE_URL,
+    grpc_port=WEAVIATE_GRPC_PORT,
+    grpc_secure=False,
+)
+recipes = client.collections.get("Recipes")
+
+def query_recipe(query: str, top_k: int = 3):
+    query_vec = model.encode(query)["dense_vecs"]
+    results = recipes.query.near_vector(near_vector=query_vec.tolist(), 
+                                        limit=top_k,
+                                        return_metadata=["distance", "certainty"])
+    return results
 
 @dataclass
 class UserContext:
@@ -116,8 +142,7 @@ def detect_recipe_from_image(image_path: str):
     Returns:
         Danh sách các nhãn (labels) nhận diện được từ ảnh.
     """
-    # URL của YOLO service (chạy trên docker map ra localhost:8000)
-    url = "http://localhost:8000/predict"
+    url = YOLO_API_URL
     
     if not os.path.exists(image_path):
         return f"Lỗi: Không tìm thấy file ảnh tại {image_path}"
@@ -142,15 +167,20 @@ def detect_recipe_from_image(image_path: str):
     except Exception as e:
         return f"Lỗi khi kết nối tới dịch vụ nhận diện ảnh: {str(e)}"
 
-model = ChatGroq(model="openai/gpt-oss-120b", 
-                 api_key=os.getenv("GROQ_API"),
+model_agent = ChatGroq(model=MODEL_NAME,
+                 api_key=GROQ_API_KEY,
                    temperature=0,
-                     streaming=True)
+                     streaming=False)
 agent = create_agent(
-    model,
+    model_agent,
     tools=[search_recipes, search_nutrition, detect_recipe_from_image],
     context_schema=UserContext,
-    system_prompt="Bạn là trợ lý ẩm thực thông minh. Bạn có thể tìm kiếm công thức nấu ăn và thực hiện các phép tính. Hãy trả lời bằng tiếng Việt.")
+    # system_prompt="Bạn là trợ lý ẩm thực thông minh. Bạn có thể tìm kiếm công thức nấu ăn và thực hiện các phép tính. Hãy trả lời bằng tiếng Việt.")
+    system_prompt="""Bạn là trợ lý ẩm thực thông minh, thân thiện. 
+- Nếu người dùng hỏi các câu xã giao hoặc kiến thức chung không cần tra cứu, hãy trả lời trực tiếp.
+- Chỉ sử dụng công cụ khi cần tìm kiếm dữ liệu cụ thể về công thức, dinh dưỡng hoặc hình ảnh.
+- Trả lời bằng tiếng Việt lịch sự.""")
+
 if __name__ == "__main__":
         result = agent.invoke(
         {"messages": [{"role": "user", "content": "Thành phần nguyên liệu của phở gà là gì?"}]},
