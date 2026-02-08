@@ -10,6 +10,7 @@ import requests
 from FlagEmbedding import BGEM3FlagModel
 import weaviate
 import os
+from langgraph.checkpoint.memory import InMemorySaver  
 
 load_dotenv()
 
@@ -58,6 +59,7 @@ def search_recipes(query: str, top_k: int = 1) -> str:
     Returns:
         Thông tin về các công thức nấu ăn liên quan
     """
+    print(f'Gọi tool tìm kiếm công thức với truy vấn')
     results = query_recipe(query, top_k=top_k)
     
     if not results.objects:
@@ -88,7 +90,7 @@ def search_nutrition(food: str) -> str:
     """
     if not API_KEY:
         return "Lỗi: API key không được cấu hình (USDA_KEY)."
-
+    print(f'Gọi tool tìm kiếm dinh dưỡng')
     # Tìm fdcId của thực phẩm
     url = f"{BASE_URL}/foods/search"
     params = {
@@ -143,7 +145,7 @@ def detect_recipe_from_image(image_path: str):
         Danh sách các nhãn (labels) nhận diện được từ ảnh.
     """
     url = YOLO_API_URL
-    
+    print(f'Gọi tool nhận diện ảnh tại')
     if not os.path.exists(image_path):
         return f"Lỗi: Không tìm thấy file ảnh tại {image_path}"
 
@@ -174,6 +176,7 @@ model_agent = ChatGroq(model=MODEL_NAME,
 agent = create_agent(
     model_agent,
     tools=[search_recipes, search_nutrition, detect_recipe_from_image],
+    checkpointer=InMemorySaver(), 
     context_schema=UserContext,
     # system_prompt="Bạn là trợ lý ẩm thực thông minh. Bạn có thể tìm kiếm công thức nấu ăn và thực hiện các phép tính. Hãy trả lời bằng tiếng Việt.")
     system_prompt="""Bạn là trợ lý ẩm thực thông minh, thân thiện. 

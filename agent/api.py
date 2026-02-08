@@ -63,6 +63,7 @@ async def chat(
         
         result = agent_instance.invoke(
             {"messages": [{"role": "user", "content": full_message}]},
+            {"configurable": {"thread_id": "1"}},
             context=context_class(user_id=user_id)
         )
         

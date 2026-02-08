@@ -43,7 +43,7 @@ def ask_agent(message, history):
 
 iface = gr.ChatInterface(
     fn=ask_agent,
-    title="Trợ lý Ẩm thực (Docker Version)",
+    title="Trợ lý Ẩm thực AI",
     multimodal=True,
     description="Đặt câu hỏi về công thức nấu ăn hoặc upload ảnh món ăn."
 )

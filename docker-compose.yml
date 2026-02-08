@@ -31,6 +31,9 @@ services:
     build: ./agent
     ports:
       - "8001:8001"
+    volumes:
+      - ./agent:/app
+    command: uvicorn api:app --host 0.0.0.0 --port 8001 --reload
     environment:
       - USDA_KEY=${USDA_KEY}
       - NUTRITION_API_URL=${NUTRITION_API_URL}
